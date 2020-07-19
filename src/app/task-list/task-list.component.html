@@ -1,0 +1,152 @@
+<div class="wrapper wrapper-content animated fadeInUp">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="ibox">
+                <div class="ibox-title">
+                    <h1>Görev Listesi</h1>
+                    <div class="ibox-tools">
+                        <button class="btn btn-primary btn-lg" (click)="open(content)">Yeni Görev Ekle</button>
+                    </div>
+                </div>
+                <div class="ibox-content">
+                    <div class="row m-b-md m-t-md justify-content-center">
+                        <div class="col-4">
+                            <div class="input-group">
+                                <input type="text" placeholder="Ara..." class="form-control-lg form-control"
+                                    [(ngModel)]="searchInput" (ngModelChange)="searchTask()">
+                                <div class="input-group-addon">
+                                    <i class="fa fa-search" aria-hidden="true"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="project-list mt-4">
+                        <a *ngIf="tasksList.length===0">
+                            <h4>Sonuç Bulunamadı...</h4>
+                        </a>
+                        <table class="table table-hover">
+                            <thead>
+                                <th>Durum</th>
+                                <th>Başlık</th>
+                                <th class="text-center">Periyot</th>
+                                <th></th>
+                            </thead>
+                            <tbody>
+
+                                <tr *ngFor="let task of tasksList; let i = index">
+                                    <td class="project-status">
+                                        <div *ngIf="isActive(task); then thenBlock else elseBlock"></div>
+                                        <ng-template #thenBlock><span class="label label-primary">Aktif</span></ng-template>
+                                        <ng-template #elseBlock><span class="label label-danger"> Süresi Geçmiş</span></ng-template>
+                                        
+                                    </td>
+                                    <td class="project-title">
+                                        <a (click)="open(detail, task)">{{task.title}}</a>
+                                        <br />
+                                        <small>Oluşturulma Tarihi: {{ task.updated_at | date: 'dd/MM/yyyy' }}</small>
+                                    </td>
+                                    <td class="project-time">
+                                        <div class="text-center">
+                                            <a>Başlama Tarihi: </a><span
+                                                class="text-center">{{ formatter.format(task.from_date) }}</span>
+                                        </div>
+                                        <div class="text-center">
+                                            <a>Bitirme Tarihi: <span
+                                                    class="text-center">{{ formatter.format(task.to_date) }}</span></a>
+                                        </div>
+                                    </td>
+                                    <td class="project-actions">
+                                        <button class="btn btn-success btn-sm" (click)="open(content, task)">
+                                            <i class="fa fa-pencil"></i> Düzenle
+                                        </button>
+                                        <button class="btn btn-danger btn-sm ml-2" (click)="onDeleteTask(task.id)">
+                                            <i class="fa fa-pencil"></i> Sil
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Update Task as Modal -->
+    <ng-template #content let-modal>
+        <div class="modal-header">
+            <h4 class="modal-title" id="modal-basic-title">{{ selectedTask ? 'Görev Düzenleme' : 'Görev Ekleme' }}</h4>
+            <button type="button" class="close" aria-label="Close" (click)="modal.dismiss('Cross click')">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form (submit)="(selectedTask ? onAddTask($event, selectedTask.id) : onAddTask($event))" name="myForm"
+                ngNativeValidate>
+                <div class="form-group">
+                    <label for="title">Görev Başlığı:</label>
+                    <input id="title" name="title" class="form-control" placeholder="Görev adı giriniz" required
+                        minlength="4" value="{{selectedTask ? selectedTask.title : null}}">
+                </div>
+
+                <label>Tarih (Günlük-Haftalık-Aylık):</label>
+                <div class="form-group datepicker-hidden">
+                    <div class="input-group">
+                        <input name="datepicker" class="form-control" ngbDatepicker #datepicker="ngbDatepicker"
+                            id="dpFromDate" [autoClose]="'outside'" (dateSelect)="onDateSelection($event)"
+                            [displayMonths]="2" [dayTemplate]="t" outsideDays="hidden" [startDate]="fromDate!">
+                        <ng-template #t let-date let-focused="focused">
+                            <span class="custom-day" [class.focused]="focused" [class.range]="isRange(date)"
+                                [class.faded]="isHovered(date) || isInside(date)" (mouseenter)="hoveredDate = date"
+                                (mouseleave)="hoveredDate = null">
+                                {{ date.day }}
+                            </span>
+                        </ng-template>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="input-group">
+                        <input #dpFromDate class="form-control" placeholder="yyyy-mm-dd" name="dpFromDate"
+                            value="{{formatter.format(fromDate)}}{{formatter.format(toDate) && ' - ' + formatter.format(toDate)}}"
+                            (input)="fromDate = validateInput(fromDate, dpFromDate.value)">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-primary" (click)="datepicker.toggle()" type="button">
+                                <i class="fa fa-calendar"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Görev Açıklaması:</label>
+
+                    <textarea id="description" name="description" class="form-control"
+                        placeholder="Görev açıklaması giriniz" minlength="4"
+                        rows="5">{{selectedTask ? selectedTask.description : null}}</textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-outline-success">
+                        {{selectedTask ? 'Kaydet' : 'Ekle'}}</button>
+                </div>
+            </form>
+        </div>
+    </ng-template>
+
+    <!-- Task Detail as Modal -->
+    <ng-template #detail let-modal>
+        <div class="modal-header">
+            <h4 class="modal-title" id="modal-basic-title">{{selectedTask.title}}</h4>
+            <button type="button" class="close" aria-label="Close" (click)="modal.dismiss('Cross click')">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>{{selectedTask.description}}</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline-dark" (click)="modal.close('Save click')">Kapat</button>
+        </div>
+    </ng-template>
+</div>
